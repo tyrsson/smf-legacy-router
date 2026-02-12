@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Webware\Router;
 
 use Mezzio\Router\Exception\RuntimeException;
@@ -13,10 +23,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use function array_key_exists;
 use function count;
 use function http_build_query;
-use function preg_replace_callback;
 use function sprintf;
 use function str_replace;
-use function urlencode;
 
 /**
  * Router implementation that matches routes based on query parameters.
@@ -43,9 +51,8 @@ final class QueryParamRouter implements RouterInterface
     private array $routesByPath = [];
 
     public function __construct(
-        private ?QueryParamDuplicateRouteDetector $duplicateDetector = null
-    ) {
-    }
+        private ?QueryParamDuplicateRouteDetector $duplicateDetector = null,
+    ) {}
 
     public function addRoute(Route $route): void
     {
@@ -65,8 +72,9 @@ final class QueryParamRouter implements RouterInterface
 
     public function match(ServerRequestInterface $request): RouteResult
     {
-        $path = $request->getUri()->getPath();
+        $path   = $request->getUri()->getPath();
         $method = $request->getMethod();
+
         /** @var array<string, mixed> $queryParams */
         $queryParams = $request->getQueryParams();
 
@@ -78,7 +86,7 @@ final class QueryParamRouter implements RouterInterface
         }
 
         // Find best matching route based on query params and method
-        $bestMatch = null;
+        $bestMatch      = null;
         $bestMatchScore = -1;
 
         foreach ($candidateRoutes as $route) {
@@ -96,7 +104,7 @@ final class QueryParamRouter implements RouterInterface
             $score = count($this->getRouteQueryParamKeys($route));
 
             if ($score > $bestMatchScore) {
-                $bestMatch = $route;
+                $bestMatch      = $route;
                 $bestMatchScore = $score;
             }
         }
@@ -118,14 +126,11 @@ final class QueryParamRouter implements RouterInterface
     public function generateUri(string $name, array $substitutions = [], array $options = []): string
     {
         if (! isset($this->routes[$name])) {
-            throw new RuntimeException(sprintf(
-                'Cannot generate URI for route "%s"; route not found',
-                $name
-            ));
+            throw new RuntimeException(sprintf('Cannot generate URI for route "%s"; route not found', $name));
         }
 
         $route = $this->routes[$name];
-        $path = $route->getPath();
+        $path  = $route->getPath();
 
         // Perform substitutions for path parameters (e.g., /users/{id})
         foreach ($substitutions as $key => $value) {
@@ -154,7 +159,7 @@ final class QueryParamRouter implements RouterInterface
         }
 
         // For standard routes, check if query_params option exists
-        $options = $route->getOptions();
+        $options      = $route->getOptions();
         $requiredKeys = $options['query_params'] ?? [];
 
         if (! is_array($requiredKeys) || empty($requiredKeys)) {
@@ -182,13 +187,13 @@ final class QueryParamRouter implements RouterInterface
             return $route->getQueryParamKeys();
         }
 
-        $options = $route->getOptions();
+        $options     = $route->getOptions();
         $queryParams = $options['query_params'] ?? [];
-        
+
         if (! is_array($queryParams)) {
             return [];
         }
-        
+
         // Ensure it's a list of strings
         return array_values(array_filter($queryParams, 'is_string'));
     }

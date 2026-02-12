@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Webware\Router;
 
 use Mezzio\Router\Exception\DuplicateRouteException;
@@ -22,6 +32,10 @@ use function sprintf;
  */
 final class QueryParamDuplicateRouteDetector
 {
+    private const ROUTE_SEARCH_ANY = 'any';
+
+    private const ROUTE_SEARCH_METHODS = 'methods';
+
     /**
      * List of all routes indexed by name
      *
@@ -52,9 +66,6 @@ final class QueryParamDuplicateRouteDetector
      */
     private array $routePaths = [];
 
-    private const ROUTE_SEARCH_ANY = 'any';
-    private const ROUTE_SEARCH_METHODS = 'methods';
-
     /**
      * Determine if the route is duplicated in the current list.
      *
@@ -73,7 +84,7 @@ final class QueryParamDuplicateRouteDetector
     {
         $this->routeNames[$route->getName()] = $route;
 
-        $path = $route->getPath();
+        $path     = $route->getPath();
         $queryKey = $this->getQueryKey($route);
 
         if ($route->allowsAnyMethod()) {
@@ -93,7 +104,7 @@ final class QueryParamDuplicateRouteDetector
             $this->duplicateRouteDetected($route);
         }
 
-        $path = $route->getPath();
+        $path     = $route->getPath();
         $queryKey = $this->getQueryKey($route);
 
         // Check if this path+query combination exists
@@ -125,22 +136,14 @@ final class QueryParamDuplicateRouteDetector
     private function duplicateRouteDetected(Route $duplicate): void
     {
         $allowedMethods = $duplicate->getAllowedMethods() ?: ['(any)'];
-        $name = $duplicate->getName();
+        $name           = $duplicate->getName();
 
         $queryParams = $this->getQueryParamsFromRoute($duplicate);
-        $queryInfo = empty($queryParams)
+        $queryInfo   = empty($queryParams)
             ? ''
             : sprintf(' with query params [%s]', implode(',', $queryParams));
 
-        throw new DuplicateRouteException(
-            sprintf(
-                'Duplicate route detected; path "%s"%s answering to methods [%s]%s',
-                $duplicate->getPath(),
-                $queryInfo,
-                implode(',', $allowedMethods),
-                $name ? sprintf(', with name "%s"', $name) : ''
-            )
-        );
+        throw new DuplicateRouteException(sprintf('Duplicate route detected; path "%s"%s answering to methods [%s]%s', $duplicate->getPath(), $queryInfo, implode(',', $allowedMethods), $name ? sprintf(', with name "%s"', $name) : ''));
     }
 
     /**
@@ -171,13 +174,13 @@ final class QueryParamDuplicateRouteDetector
      */
     private function getQueryParamsFromRoute(Route $route): array
     {
-        $options = $route->getOptions();
+        $options     = $route->getOptions();
         $queryParams = $options['query_params'] ?? [];
-        
+
         if (! is_array($queryParams)) {
             return [];
         }
-        
+
         // Ensure it's a list of strings
         return array_values(array_filter($queryParams, 'is_string'));
     }

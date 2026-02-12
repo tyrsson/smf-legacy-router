@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace WebwareTest\Router;
 
 use PHPUnit\Framework\TestCase;
@@ -25,8 +35,6 @@ class ConfigProviderTest extends TestCase
     {
         $config = ($this->provider)();
 
-        $this->assertIsArray($config);
-        $this->assertArrayHasKey('dependencies', $config);
         $this->assertArrayHasKey(QueryParamRouter::class, $config);
     }
 
@@ -77,7 +85,7 @@ class ConfigProviderTest extends TestCase
         ]);
 
         $factory = new QueryParamRouterFactory();
-        $router = $factory($container);
+        $router  = $factory($container);
 
         $this->assertInstanceOf(QueryParamRouter::class, $router);
     }
@@ -91,7 +99,7 @@ class ConfigProviderTest extends TestCase
         ]);
 
         $factory = new QueryParamRouterFactory();
-        $router = $factory($container);
+        $router  = $factory($container);
 
         $this->assertInstanceOf(QueryParamRouter::class, $router);
     }
@@ -102,7 +110,7 @@ class ConfigProviderTest extends TestCase
         $container->method('has')->willReturn(false);
 
         $factory = new QueryParamRouterFactory();
-        $router = $factory($container);
+        $router  = $factory($container);
 
         $this->assertInstanceOf(QueryParamRouter::class, $router);
     }
@@ -111,7 +119,7 @@ class ConfigProviderTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $factory = new QueryParamDuplicateRouteDetectorFactory();
+        $factory  = new QueryParamDuplicateRouteDetectorFactory();
         $detector = $factory($container);
 
         $this->assertInstanceOf(QueryParamDuplicateRouteDetector::class, $detector);

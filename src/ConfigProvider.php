@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Webware\Router;
 
 use Mezzio\Router\RouterInterface;
@@ -29,7 +39,7 @@ final class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies' => $this->getDependencies(),
+            'dependencies'          => $this->getDependencies(),
             QueryParamRouter::class => $this->getRouterConfig(),
         ];
     }
@@ -43,10 +53,10 @@ final class ConfigProvider
     {
         return [
             'factories' => [
-                QueryParamRouter::class => QueryParamRouterFactory::class,
+                QueryParamRouter::class                 => QueryParamRouterFactory::class,
                 QueryParamDuplicateRouteDetector::class => QueryParamDuplicateRouteDetectorFactory::class,
             ],
-            'aliases' => [
+            'aliases'   => [
                 // Optionally alias RouterInterface to QueryParamRouter
                 // Uncomment if you want this router to be the default
                 // RouterInterface::class => QueryParamRouter::class,

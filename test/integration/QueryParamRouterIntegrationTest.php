@@ -2,11 +2,22 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace WebwareIntegrationTest\Router;
 
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Stratigility\MiddlewarePipe;
+use Mezzio\Router\RouteResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,7 +26,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Router\QueryParamDuplicateRouteDetector;
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
-use Mezzio\Router\RouteResult;
 
 class QueryParamRouterIntegrationTest extends TestCase
 {
@@ -30,10 +40,10 @@ class QueryParamRouterIntegrationTest extends TestCase
     {
         // Set up routes
         $createHandler = $this->createHandler('create-response');
-        $listHandler = $this->createHandler('list-response');
+        $listHandler   = $this->createHandler('list-response');
 
         $createRoute = new QueryParamRoute('/api', $createHandler, ['action'], ['POST'], 'api-create');
-        $listRoute = new QueryParamRoute('/api', $listHandler, ['action'], ['GET'], 'api-list');
+        $listRoute   = new QueryParamRoute('/api', $listHandler, ['action'], ['GET'], 'api-list');
 
         $this->router->addRoute($createRoute);
         $this->router->addRoute($listRoute);
@@ -66,16 +76,22 @@ class QueryParamRouterIntegrationTest extends TestCase
 
     public function testRouteResultAttributeIsSetInRequest(): void
     {
-        $middleware = new class implements MiddlewareInterface {
+        $middleware = new class() implements MiddlewareInterface {
             public function process(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 $routeResult = $request->getAttribute(RouteResult::class);
 
                 if ($routeResult instanceof RouteResult && $routeResult->isSuccess()) {
+                    /** @var array<string, mixed> $params */
                     $params = $routeResult->getMatchedParams();
-                    return new TextResponse('action:' . ($params['action'] ?? 'none'));
+
+                    /** @var string $action */
+                    $action = $params['action'] ?? 'none';
+                    $txt    = "action:{$action}";
+
+                    return new TextResponse($txt);
                 }
 
                 return new TextResponse('no-route');
@@ -101,16 +117,16 @@ class QueryParamRouterIntegrationTest extends TestCase
     public function testMultipleQueryParamsAreMatched(): void
     {
         $middleware = $this->createHandler('matched');
-        $route = new QueryParamRoute('/api', $middleware, ['action', 'type', 'id']);
+        $route      = new QueryParamRoute('/api', $middleware, ['action', 'type', 'id']);
 
         $this->router->addRoute($route);
 
         $request = new ServerRequest([], [], '/api', 'GET');
         $request = $request->withQueryParams([
             'action' => 'update',
-            'type' => 'user',
-            'id' => '123',
-            'extra' => 'ignored',
+            'type'   => 'user',
+            'id'     => '123',
+            'extra'  => 'ignored',
         ]);
 
         $result = $this->router->match($request);
@@ -142,8 +158,8 @@ class QueryParamRouterIntegrationTest extends TestCase
         $request = new ServerRequest([], [], '/api', 'GET');
         $request = $request->withQueryParams([
             'action' => 'update',
-            'type' => 'user',
-            'id' => '123',
+            'type'   => 'user',
+            'id'     => '123',
         ]);
 
         $result = $this->router->match($request);
@@ -154,7 +170,7 @@ class QueryParamRouterIntegrationTest extends TestCase
         $request = new ServerRequest([], [], '/api', 'GET');
         $request = $request->withQueryParams([
             'action' => 'list',
-            'type' => 'user',
+            'type'   => 'user',
         ]);
 
         $result = $this->router->match($request);
@@ -173,14 +189,14 @@ class QueryParamRouterIntegrationTest extends TestCase
     public function testUriGenerationInRealWorldScenario(): void
     {
         $middleware = $this->createHandler('response');
-        $route = new QueryParamRoute('/users/{id}/posts', $middleware, ['action'], null, 'user-posts');
+        $route      = new QueryParamRoute('/users/{id}/posts', $middleware, ['action'], null, 'user-posts');
 
         $this->router->addRoute($route);
 
         // Generate URI with path substitution and query params
         $uri = $this->router->generateUri(
             'user-posts',
-            ['id' => '42'],
+            ['id'    => '42'],
             ['query' => ['action' => 'edit', 'draft' => 'true']]
         );
 
@@ -192,7 +208,7 @@ class QueryParamRouterIntegrationTest extends TestCase
     public function testFailureScenarioReturns404(): void
     {
         $middleware = $this->createHandler('success');
-        $route = new QueryParamRoute('/api', $middleware, ['action']);
+        $route      = new QueryParamRoute('/api', $middleware, ['action']);
 
         $this->router->addRoute($route);
 
@@ -209,26 +225,26 @@ class QueryParamRouterIntegrationTest extends TestCase
     public function testEmptyQueryParamsRouteMatchesAnyQueryParams(): void
     {
         $middleware = $this->createHandler('matched');
-        $route = new QueryParamRoute('/api', $middleware, []);
+        $route      = new QueryParamRoute('/api', $middleware, []);
 
         $this->router->addRoute($route);
 
         // Should match with no query params
         $request1 = new ServerRequest([], [], '/api', 'GET');
-        $result1 = $this->router->match($request1);
+        $result1  = $this->router->match($request1);
         $this->assertTrue($result1->isSuccess());
 
         // Should also match with any query params
         $request2 = new ServerRequest([], [], '/api', 'GET');
         $request2 = $request2->withQueryParams(['anything' => 'goes']);
-        $result2 = $this->router->match($request2);
+        $result2  = $this->router->match($request2);
         $this->assertTrue($result2->isSuccess());
     }
 
     public function testRouteMatchesWithKeyPresentRegardlessOfValue(): void
     {
         $middleware = $this->createHandler('matched');
-        $route = new QueryParamRoute('/', $middleware, ['board']);
+        $route      = new QueryParamRoute('/', $middleware, ['board']);
 
         $this->router->addRoute($route);
 
@@ -248,13 +264,11 @@ class QueryParamRouterIntegrationTest extends TestCase
     private function createHandler(string $responseText): MiddlewareInterface
     {
         return new class($responseText) implements MiddlewareInterface {
-            public function __construct(private string $responseText)
-            {
-            }
+            public function __construct(private string $responseText) {}
 
             public function process(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 return new TextResponse($this->responseText);
             }
@@ -266,15 +280,13 @@ class QueryParamRouterIntegrationTest extends TestCase
         $router = $this->router;
 
         return new class($router) implements MiddlewareInterface {
-            public function __construct(private QueryParamRouter $router)
-            {
-            }
+            public function __construct(private QueryParamRouter $router) {}
 
             public function process(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
-                $result = $this->router->match($request);
+                $result  = $this->router->match($request);
                 $request = $request->withAttribute(RouteResult::class, $result);
 
                 return $handler->handle($request);
@@ -284,15 +296,18 @@ class QueryParamRouterIntegrationTest extends TestCase
 
     private function createDispatchMiddleware(): MiddlewareInterface
     {
-        return new class implements MiddlewareInterface {
+        return new class() implements MiddlewareInterface {
             public function process(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
+                /** @var RouteResult|null $result */
                 $result = $request->getAttribute(RouteResult::class);
 
                 if ($result instanceof RouteResult && $result->isSuccess()) {
+                    /** @var QueryParamRoute $route */
                     $route = $result->getMatchedRoute();
+
                     return $route->process($request, $handler);
                 }
 
@@ -303,7 +318,7 @@ class QueryParamRouterIntegrationTest extends TestCase
 
     private function createFinalHandler(): RequestHandlerInterface
     {
-        return new class implements RequestHandlerInterface {
+        return new class() implements RequestHandlerInterface {
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 return new TextResponse('not-found', 404);

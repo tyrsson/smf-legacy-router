@@ -2,11 +2,22 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace WebwareTest\Router;
 
 use Laminas\Diactoros\ServerRequest;
-use Laminas\Diactoros\Uri;
+use Mezzio\Router\Exception\DuplicateRouteException;
 use Mezzio\Router\Exception\RuntimeException;
+use Mezzio\Router\RouterInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Server\MiddlewareInterface;
 use Webware\Router\QueryParamDuplicateRouteDetector;
@@ -16,17 +27,18 @@ use Webware\Router\QueryParamRouter;
 class QueryParamRouterTest extends TestCase
 {
     private QueryParamRouter $router;
+
     private MiddlewareInterface $middleware;
 
     protected function setUp(): void
     {
-        $this->router = new QueryParamRouter();
+        $this->router     = new QueryParamRouter();
         $this->middleware = $this->createMock(MiddlewareInterface::class);
     }
 
     public function testImplementsRouterInterface(): void
     {
-        $this->assertInstanceOf(\Mezzio\Router\RouterInterface::class, $this->router);
+        $this->assertInstanceOf(RouterInterface::class, $this->router);
     }
 
     public function testAddRouteStoresRoute(): void
@@ -35,7 +47,7 @@ class QueryParamRouterTest extends TestCase
         $this->router->addRoute($route);
 
         // If no exception thrown, route was added successfully
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testMatchReturnsSuccessForMatchingPathAndQueryParams(): void
@@ -223,7 +235,7 @@ class QueryParamRouterTest extends TestCase
     public function testRouterWithDuplicateDetector(): void
     {
         $detector = new QueryParamDuplicateRouteDetector();
-        $router = new QueryParamRouter($detector);
+        $router   = new QueryParamRouter($detector);
 
         $route1 = new QueryParamRoute('/api', $this->middleware, ['action']);
         $router->addRoute($route1);
@@ -231,7 +243,7 @@ class QueryParamRouterTest extends TestCase
         // This should throw due to duplicate detection
         $route2 = new QueryParamRoute('/api', $this->middleware, ['action']);
 
-        $this->expectException(\Mezzio\Router\Exception\DuplicateRouteException::class);
+        $this->expectException(DuplicateRouteException::class);
         $router->addRoute($route2);
     }
 
@@ -245,7 +257,7 @@ class QueryParamRouterTest extends TestCase
         $router->addRoute($route1);
         $router->addRoute($route2); // Should not throw
 
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testMatchQueryParamKeysAreCaseSensitive(): void

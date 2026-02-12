@@ -5,47 +5,30 @@ declare(strict_types=1);
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
+use Webware\CodingStandard\Webware1x0Set;
+use Webware\CodingStandard\WebwareCopyRight;
 
-$year = date('Y');
-
-if ($year !== '2026') {
-    $year = '2026-' . $year;
-}
-
-$packageName = (function (): string {
-    $composerData = json_decode(file_get_contents('./composer.json'), true, 2);
-    $totalLength  = strlen($composerData['name']);
-    $slashPos     = strpos($composerData['name'], '/');
-    return substr($composerData['name'], $slashPos + 1, $totalLength - $slashPos - 1);
-})();
-
-$fileHeader = <<<HEADER
-    This file is part of the {$packageName} package.
-
-    Copyright (c) {$year} Joey Smith <jsmith@webinertia.net>
-    and contributors.
-
-    For the full copyright and license information, please view the LICENSE
-    file that was distributed with this source code.
-    HEADER;
-
-$rules = require 'vendor/webware/coding-standard/src/ruleset.php';
+$composerData = json_decode(
+    file_get_contents('composer.json'),
+    true,
+    512,
+);
 
 return (new Config())
+    ->registerCustomRuleSets([
+        new Webware1x0Set(),
+        new WebwareCopyRight(
+            packageName: $composerData['name'],
+            authorName: $composerData['authors'][0]['name'],
+            authorEmail: $composerData['authors'][0]['email'],
+        ),
+    ])
     ->setParallelConfig(ParallelConfigFactory::detect()) // @TODO 4.0 no need to call this manually
     ->setRiskyAllowed(true)
-    ->setRules(
-        array_merge(
-            $rules,
-            [
-                'header_comment' => [
-                    'header'   => $fileHeader,
-                    'location' => 'after_declare_strict',
-                    'separate' => 'both',
-                ],
-            ],
-        ),
-    )
+    ->setRules([
+        '@Webware/copyright-header'    => true,
+        '@Webware/coding-standard-1.0' => true,
+    ])
     // 💡 by default, Fixer looks for `*.php` files excluding `./vendor/` - here, you can groom this config
     ->setFinder(
         (new Finder())

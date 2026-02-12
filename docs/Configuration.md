@@ -20,13 +20,12 @@ Add the ConfigProvider to your configuration aggregator:
 // config/config.php
 use Laminas\ConfigAggregator\ConfigAggregator;
 use Webware\Router\ConfigProvider;
-
 $aggregator = new ConfigAggregator([
     ConfigProvider::class,
     // ... other providers
 ]);
-
 return $aggregator->getMergedConfig();
+
 ```
 
 ### Manual Configuration
@@ -39,7 +38,6 @@ use Webware\Router\QueryParamRouter;
 use Webware\Router\QueryParamRouterFactory;
 use Webware\Router\QueryParamDuplicateRouteDetector;
 use Webware\Router\QueryParamDuplicateRouteDetectorFactory;
-
 return [
     'dependencies' => [
         'factories' => [
@@ -48,6 +46,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ## Service Manager Configuration
@@ -63,19 +62,19 @@ The router and detector are registered as factories:
         QueryParamDuplicateRouteDetector::class => QueryParamDuplicateRouteDetectorFactory::class,
     ],
 ]
+
 ```
 
 ### Retrieving from Container
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 // Via container
 $router = $container->get(QueryParamRouter::class);
-
 // Via factory
 $factory = new QueryParamRouterFactory();
 $router = $factory($container);
+
 ```
 
 ### Making Router the Default
@@ -85,7 +84,6 @@ Alias `RouterInterface` to use QueryParamRouter as default:
 ```php
 use Mezzio\Router\RouterInterface;
 use Webware\Router\QueryParamRouter;
-
 return [
     'dependencies' => [
         'aliases' => [
@@ -93,6 +91,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ## Router Options
@@ -103,12 +102,12 @@ Router options are stored under `QueryParamRouter::class`:
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,
     ],
 ];
+
 ```
 
 ### Available Options
@@ -116,7 +115,6 @@ return [
 #### `detect_duplicates` (bool)
 
 **Default**: `true`
-
 Enable or disable duplicate route detection.
 
 ```php
@@ -124,13 +122,14 @@ QueryParamRouter::class => [
     'detect_duplicates' => true,   // Enable (recommended)
     'detect_duplicates' => false,  // Disable
 ]
+
 ```
 
 **When to enable:**
+
 - During development (catch configuration errors early)
 - In testing environments
 - When route configuration changes frequently
-
 **When to disable:**
 - In production (optional, minimal performance impact)
 - When routes are static and well-tested
@@ -143,12 +142,12 @@ QueryParamRouter::class => [
 ```php
 // config/autoload/development.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Always enabled in dev
     ],
 ];
+
 ```
 
 ### Production Environment
@@ -156,12 +155,12 @@ return [
 ```php
 // config/autoload/production.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => false,  // Optional: disable for performance
     ],
 ];
+
 ```
 
 ### Testing Environment
@@ -169,12 +168,12 @@ return [
 ```php
 // config/autoload/testing.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Enabled to catch test issues
     ],
 ];
+
 ```
 
 ## Advanced Configuration
@@ -185,26 +184,21 @@ Create a custom factory to add additional logic:
 
 ```php
 namespace App\Router;
-
 use Psr\Container\ContainerInterface;
 use Webware\Router\QueryParamRouter;
 use Webware\Router\QueryParamDuplicateRouteDetector;
-
 class CustomRouterFactory
 {
     public function __invoke(ContainerInterface $container): QueryParamRouter
     {
         $config = $container->get('config');
         $routerConfig = $config[QueryParamRouter::class] ?? [];
-        
         // Custom logic
         $detectDuplicates = $routerConfig['detect_duplicates'] ?? true;
-        $detector = $detectDuplicates 
+        $detector = $detectDuplicates
             ? $container->get(QueryParamDuplicateRouteDetector::class)
             : null;
-        
         $router = new QueryParamRouter($detector);
-        
         // Auto-load routes from config
         if (isset($routerConfig['routes'])) {
             foreach ($routerConfig['routes'] as $routeConfig) {
@@ -212,15 +206,14 @@ class CustomRouterFactory
                 $router->addRoute($route);
             }
         }
-        
         return $router;
     }
-    
     private function createRouteFromConfig(array $config, ContainerInterface $container)
     {
         // Route creation logic
     }
 }
+
 ```
 
 Register your custom factory:
@@ -233,6 +226,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ### Lazy Route Loading
@@ -241,7 +235,6 @@ Load routes from configuration lazily:
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,
@@ -263,6 +256,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ### Delegator Pattern
@@ -271,10 +265,8 @@ Use a delegator to enhance the router:
 
 ```php
 namespace App\Router;
-
 use Psr\Container\ContainerInterface;
 use Webware\Router\QueryParamRouter;
-
 class RouterDelegatorFactory
 {
     public function __invoke(
@@ -283,18 +275,16 @@ class RouterDelegatorFactory
         callable $callback
     ): QueryParamRouter {
         $router = $callback();
-        
         // Add logging
         $logger = $container->get('Logger');
         $router = new LoggingRouterDecorator($router, $logger);
-        
         // Add caching
         $cache = $container->get('Cache');
         $router = new CachingRouterDecorator($router, $cache);
-        
         return $router;
     }
 }
+
 ```
 
 Register the delegator:
@@ -309,13 +299,14 @@ return [
         ],
     ],
 ];
+
 ```
 
 ## Configuration File Organization
 
 ### Recommended Structure
 
-```
+```text
 config/
 ├── config.php                          # Main aggregator
 ├── autoload/
@@ -327,6 +318,7 @@ config/
 │   ├── production.local.php            # Prod environment
 │   └── testing.local.php               # Test environment
 └── routes.php                          # Route definitions
+
 ```
 
 ### Example Configuration Files
@@ -336,52 +328,51 @@ config/
 ```php
 use Laminas\ConfigAggregator\ConfigAggregator;
 use Laminas\ConfigAggregator\PhpFileProvider;
-
 $aggregator = new ConfigAggregator([
     \Laminas\Diactoros\ConfigProvider::class,
     \Webware\Router\ConfigProvider::class,
     new PhpFileProvider(realpath(__DIR__) . '/autoload/{{,*.}global,{,*.}local}.php'),
 ], 'data/cache/config-cache.php');
-
 return $aggregator->getMergedConfig();
+
 ```
 
 #### config/autoload/router.global.php
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,
     ],
 ];
+
 ```
 
 #### config/autoload/development.local.php
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     'debug' => true,
     QueryParamRouter::class => [
         'detect_duplicates' => true,
     ],
 ];
+
 ```
 
 #### config/autoload/production.local.php
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     'debug' => false,
     QueryParamRouter::class => [
         'detect_duplicates' => false,
     ],
 ];
+
 ```
 
 ## Configuration Caching
@@ -393,17 +384,18 @@ return [
 $cacheConfig = [
     'config_cache_path' => 'data/cache/config-cache.php',
 ];
-
 $aggregator = new ConfigAggregator(
     $providers,
     $cacheConfig['config_cache_path']
 );
+
 ```
 
 ### Clear Config Cache
 
 ```bash
 rm data/cache/config-cache.php
+
 ```
 
 Or programmatically:
@@ -415,6 +407,7 @@ if (file_exists($cacheFile)) {
     unlink($cacheFile);
     echo "Config cache cleared.\n";
 }
+
 ```
 
 ## Troubleshooting
@@ -422,64 +415,75 @@ if (file_exists($cacheFile)) {
 ### Container Cannot Find Router
 
 **Problem**: `ServiceNotFoundException: Unable to resolve service "Webware\Router\QueryParamRouter"`
-
 **Solutions**:
 
-1. Verify ConfigProvider is registered:
+- Verify ConfigProvider is registered:
+
 ```php
 // config/config.php
 $aggregator = new ConfigAggregator([
     \Webware\Router\ConfigProvider::class,  // Add this
     // ...
 ]);
+
 ```
 
-2. Clear config cache:
+- Clear config cache:
+
 ```bash
 rm data/cache/config-cache.php
+
 ```
 
-3. Verify autoloader is updated:
+- Verify autoloader is updated:
+
 ```bash
 composer dump-autoload
+
 ```
 
 ### Configuration Not Applied
 
 **Problem**: Router ignores configuration changes
-
 **Solutions**:
 
-1. Verify config is injected into container:
+- Verify config is injected into container:
+
 ```php
 $container->setService('config', $config);
+
 ```
 
-2. Clear config cache
+- Clear config cache
 
-3. Check configuration file is loaded:
+- Check configuration file is loaded:
+
 ```php
 // Add to config/config.php for debugging
 var_dump($aggregator->getMergedConfig());
+
 ```
 
 ### Duplicate Detection Not Working
 
 **Problem**: Duplicate routes not detected
-
 **Solutions**:
 
-1. Verify configuration:
+- Verify configuration:
+
 ```php
 $config = $container->get('config');
 var_dump($config[QueryParamRouter::class]['detect_duplicates']);
+
 ```
 
-2. Ensure detector is passed to router:
+- Ensure detector is passed to router:
+
 ```php
 // In factory
 $detector = $container->get(QueryParamDuplicateRouteDetector::class);
 $router = new QueryParamRouter($detector);  // Don't pass null
+
 ```
 
 ## See Also

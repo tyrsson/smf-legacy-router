@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace WebwareTest\Router;
 
 use Mezzio\Router\Exception\DuplicateRouteException;
@@ -13,11 +23,12 @@ use Webware\Router\QueryParamRoute;
 class QueryParamDuplicateRouteDetectorTest extends TestCase
 {
     private QueryParamDuplicateRouteDetector $detector;
+
     private MiddlewareInterface $middleware;
 
     protected function setUp(): void
     {
-        $this->detector = new QueryParamDuplicateRouteDetector();
+        $this->detector   = new QueryParamDuplicateRouteDetector();
         $this->middleware = $this->createMock(MiddlewareInterface::class);
     }
 
@@ -29,7 +40,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
 
-        $this->assertTrue(true); // If we get here, no exception was thrown
+        // $this->assertTrue(true); // If we get here, no exception was thrown
     }
 
     public function testThrowsOnDuplicatePathAndQueryParams(): void
@@ -63,7 +74,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
 
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testThrowsWhenAnyMethodRouteExistsAndSpecificMethodAdded(): void
@@ -107,7 +118,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw (different case)
 
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testThrowsOnDuplicateRouteName(): void
@@ -130,7 +141,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
 
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testAllowsEmptyQueryParamsOnDifferentPaths(): void
@@ -141,7 +152,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
 
-        $this->assertTrue(true);
+        // $this->assertTrue(true);
     }
 
     public function testThrowsOnDuplicateEmptyQueryParamsSamePath(): void

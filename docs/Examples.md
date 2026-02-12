@@ -20,9 +20,7 @@ Route legacy SMF-style URLs like `index.php?board=1&action=display`:
 ```php
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
-
 $router = new QueryParamRouter(new QueryParamDuplicateRouteDetector());
-
 // Board display: index.php?board=1
 $router->addRoute(new QueryParamRoute(
     '/index.php',
@@ -31,7 +29,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'forum.board'
 ));
-
 // Topic display: index.php?board=1&topic=100
 $router->addRoute(new QueryParamRoute(
     '/index.php',
@@ -40,7 +37,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'forum.topic'
 ));
-
 // Post display: index.php?board=1&topic=100&msg=5
 $router->addRoute(new QueryParamRoute(
     '/index.php',
@@ -49,7 +45,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'forum.post'
 ));
-
 // Board actions: index.php?board=1&action=markasread
 $router->addRoute(new QueryParamRoute(
     '/index.php',
@@ -58,6 +53,7 @@ $router->addRoute(new QueryParamRoute(
     ['GET', 'POST'],
     'forum.board.action'
 ));
+
 ```
 
 ### Handling Requests
@@ -65,52 +61,46 @@ $router->addRoute(new QueryParamRoute(
 ```php
 // Request: GET /index.php?board=1&topic=100&page=2
 $result = $router->match($request);
-
 if ($result->isSuccess()) {
     $params = $result->getMatchedParams();
     // ['board' => '1', 'topic' => '100']
     // Note: 'page' is not included (not a required param)
-    
     $route = $result->getMatchedRoute();
     $response = $route->process($request, $handler);
 }
+
 ```
 
 ### Middleware Implementation
 
 ```php
 namespace App\Middleware;
-
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-
 class DisplayTopicMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private TopicRepository $topics,
         private TemplateRenderer $renderer
     ) {}
-    
     public function process(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
         $boardId = $request->getQueryParams()['board'] ?? null;
         $topicId = $request->getQueryParams()['topic'] ?? null;
-        
         if (!$boardId || !$topicId) {
             return new Response\EmptyResponse(404);
         }
-        
         $topic = $this->topics->findByBoardAndId($boardId, $topicId);
-        
         return $this->renderer->render('forum/topic', [
             'topic' => $topic,
         ]);
     }
 }
+
 ```
 
 ## API Routing
@@ -126,7 +116,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'api.list'
 ));
-
 // POST /api?resource=users&action=create
 $router->addRoute(new QueryParamRoute(
     '/api',
@@ -135,7 +124,6 @@ $router->addRoute(new QueryParamRoute(
     ['POST'],
     'api.create'
 ));
-
 // PUT /api?resource=users&action=update&id=123
 $router->addRoute(new QueryParamRoute(
     '/api',
@@ -144,7 +132,6 @@ $router->addRoute(new QueryParamRoute(
     ['PUT'],
     'api.update'
 ));
-
 // DELETE /api?resource=users&action=delete&id=123
 $router->addRoute(new QueryParamRoute(
     '/api',
@@ -153,6 +140,7 @@ $router->addRoute(new QueryParamRoute(
     ['DELETE'],
     'api.delete'
 ));
+
 ```
 
 ### Generic API Middleware
@@ -161,7 +149,6 @@ $router->addRoute(new QueryParamRoute(
 class ApiMiddleware implements MiddlewareInterface
 {
     public function __construct(private array $handlers) {}
-    
     public function process(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
@@ -169,12 +156,10 @@ class ApiMiddleware implements MiddlewareInterface
         $params = $request->getQueryParams();
         $resource = $params['resource'] ?? null;
         $action = $params['action'] ?? null;
-        
         $handlerKey = "$resource.$action";
         if (!isset($this->handlers[$handlerKey])) {
             return new JsonResponse(['error' => 'Action not found'], 404);
         }
-        
         try {
             $result = $this->handlers[$handlerKey]->handle($request);
             return new JsonResponse($result);
@@ -183,6 +168,7 @@ class ApiMiddleware implements MiddlewareInterface
         }
     }
 }
+
 ```
 
 ## Forum Application
@@ -193,13 +179,11 @@ class ApiMiddleware implements MiddlewareInterface
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
 use Webware\Router\QueryParamDuplicateRouteDetector;
-
 class ForumRouterFactory
 {
     public function create(): QueryParamRouter
     {
         $router = new QueryParamRouter(new QueryParamDuplicateRouteDetector());
-        
         // Homepage
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -208,7 +192,6 @@ class ForumRouterFactory
             ['GET'],
             'home'
         ));
-        
         // Board category list
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -217,7 +200,6 @@ class ForumRouterFactory
             ['GET'],
             'category'
         ));
-        
         // Board list/display
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -226,7 +208,6 @@ class ForumRouterFactory
             ['GET'],
             'board'
         ));
-        
         // Topic display
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -235,7 +216,6 @@ class ForumRouterFactory
             ['GET'],
             'topic'
         ));
-        
         // Post actions
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -244,7 +224,6 @@ class ForumRouterFactory
             ['GET', 'POST'],
             'post.action'
         ));
-        
         // Moderation actions
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -253,7 +232,6 @@ class ForumRouterFactory
             ['POST'],
             'moderate.topic'
         ));
-        
         $router->addRoute(new QueryParamRoute(
             '/',
             new ModerationMiddleware(),
@@ -261,7 +239,6 @@ class ForumRouterFactory
             ['POST'],
             'moderate.board'
         ));
-        
         // User profile
         $router->addRoute(new QueryParamRoute(
             '/',
@@ -270,10 +247,10 @@ class ForumRouterFactory
             ['GET'],
             'profile'
         ));
-        
         return $router;
     }
 }
+
 ```
 
 ### With Middleware Pipeline
@@ -281,22 +258,16 @@ class ForumRouterFactory
 ```php
 use Laminas\Stratigility\MiddlewarePipe;
 use Mezzio\Router\RouteResult;
-
 $app = new MiddlewarePipe();
-
 // Error handling
 $app->pipe(new ErrorHandlerMiddleware());
-
 // Session
 $app->pipe(new SessionMiddleware());
-
 // Authentication
 $app->pipe(new AuthenticationMiddleware());
-
 // Routing
 $app->pipe(new class($router) implements MiddlewareInterface {
     public function __construct(private QueryParamRouter $router) {}
-    
     public function process($request, $handler): ResponseInterface {
         $result = $this->router->match($request);
         return $handler->handle(
@@ -304,7 +275,6 @@ $app->pipe(new class($router) implements MiddlewareInterface {
         );
     }
 });
-
 // Not found handler
 $app->pipe(new class implements MiddlewareInterface {
     public function process($request, $handler): ResponseInterface {
@@ -315,7 +285,6 @@ $app->pipe(new class implements MiddlewareInterface {
         return $handler->handle($request);
     }
 });
-
 // Dispatch
 $app->pipe(new class implements MiddlewareInterface {
     public function process($request, $handler): ResponseInterface {
@@ -326,6 +295,7 @@ $app->pipe(new class implements MiddlewareInterface {
         return $handler->handle($request);
     }
 });
+
 ```
 
 ## Multi-Tenant Application
@@ -341,7 +311,6 @@ $router->addRoute(new QueryParamRoute(
     null,
     'tenant.home'
 ));
-
 // Tenant dashboard: ?tenant=acme&action=dashboard
 $router->addRoute(new QueryParamRoute(
     '/',
@@ -350,7 +319,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'tenant.dashboard'
 ));
-
 // Tenant resources: ?tenant=acme&resource=users
 $router->addRoute(new QueryParamRoute(
     '/manage',
@@ -359,6 +327,7 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'tenant.resource'
 ));
+
 ```
 
 ### Tenant Middleware
@@ -367,28 +336,24 @@ $router->addRoute(new QueryParamRoute(
 class TenantMiddleware implements MiddlewareInterface
 {
     public function __construct(private TenantRepository $tenants) {}
-    
     public function process(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
         $tenantId = $request->getQueryParams()['tenant'] ?? null;
-        
         if (!$tenantId) {
             return new Response\RedirectResponse('/select-tenant');
         }
-        
         $tenant = $this->tenants->find($tenantId);
         if (!$tenant) {
             return new Response\HtmlResponse('Tenant not found', 404);
         }
-        
         // Add tenant to request
         $request = $request->withAttribute('tenant', $tenant);
-        
         return $handler->handle($request);
     }
 }
+
 ```
 
 ## Action-Based Routing
@@ -404,7 +369,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET', 'POST'],
     'manage.create'
 ));
-
 // Read/List
 $router->addRoute(new QueryParamRoute(
     '/manage',
@@ -413,7 +377,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'manage.list'
 ));
-
 // Update
 $router->addRoute(new QueryParamRoute(
     '/manage',
@@ -422,7 +385,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET', 'POST'],
     'manage.update'
 ));
-
 // Delete
 $router->addRoute(new QueryParamRoute(
     '/manage',
@@ -431,6 +393,7 @@ $router->addRoute(new QueryParamRoute(
     ['POST'],
     'manage.delete'
 ));
+
 ```
 
 ### Action Dispatcher
@@ -439,26 +402,21 @@ $router->addRoute(new QueryParamRoute(
 class ActionDispatcherMiddleware implements MiddlewareInterface
 {
     private array $actions = [];
-    
     public function registerAction(string $name, callable $handler): void
     {
         $this->actions[$name] = $handler;
     }
-    
     public function process(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
         $action = $request->getQueryParams()['action'] ?? null;
-        
         if (!$action || !isset($this->actions[$action])) {
             return new Response\HtmlResponse('Action not found', 404);
         }
-        
         return $this->actions[$action]($request, $handler);
     }
 }
-
 // Usage
 $dispatcher = new ActionDispatcherMiddleware();
 $dispatcher->registerAction('create', function($req, $handler) {
@@ -470,6 +428,7 @@ $dispatcher->registerAction('edit', function($req, $handler) {
 $dispatcher->registerAction('delete', function($req, $handler) {
     return new Response\RedirectResponse('/success');
 });
+
 ```
 
 ## Complex Routing Scenarios
@@ -485,7 +444,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'org'
 ));
-
 // Department in org: ?org=1&dept=10
 $router->addRoute(new QueryParamRoute(
     '/admin',
@@ -494,7 +452,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'org.dept'
 ));
-
 // Team in department: ?org=1&dept=10&team=5
 $router->addRoute(new QueryParamRoute(
     '/admin',
@@ -503,7 +460,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'org.dept.team'
 ));
-
 // User in team: ?org=1&dept=10&team=5&user=100
 $router->addRoute(new QueryParamRoute(
     '/admin',
@@ -512,6 +468,7 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'org.dept.team.user'
 ));
+
 ```
 
 ### Mixed Path and Query Parameters
@@ -525,7 +482,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'user.profile'
 ));
-
 $router->addRoute(new QueryParamRoute(
     '/users/{id}',
     new UserEditMiddleware(),
@@ -533,15 +489,14 @@ $router->addRoute(new QueryParamRoute(
     ['GET', 'POST'],
     'user.edit'
 ));
-
 // URI generation
 $uri = $router->generateUri('user.profile', ['id' => '42']);
 // /users/42
-
 $uri = $router->generateUri('user.edit', ['id' => '42'], [
     'query' => ['action' => 'edit']
 ]);
 // /users/42?action=edit
+
 ```
 
 ### Conditional Route Registration
@@ -553,7 +508,6 @@ class RouteConfigurator
         private QueryParamRouter $router,
         private array $features
     ) {}
-    
     public function configure(): void
     {
         // Always available
@@ -564,21 +518,17 @@ class RouteConfigurator
             ['GET'],
             'home'
         ));
-        
         // Feature-flagged routes
         if ($this->features['forum_enabled']) {
             $this->addForumRoutes();
         }
-        
         if ($this->features['api_enabled']) {
             $this->addApiRoutes();
         }
-        
         if ($this->features['admin_enabled']) {
             $this->addAdminRoutes();
         }
     }
-    
     private function addForumRoutes(): void
     {
         $this->router->addRoute(new QueryParamRoute(
@@ -589,9 +539,9 @@ class RouteConfigurator
             'forum'
         ));
     }
-    
     // ... other route methods
 }
+
 ```
 
 ## Testing Examples
@@ -601,28 +551,22 @@ class RouteConfigurator
 ```php
 use PHPUnit\Framework\TestCase;
 use Laminas\Diactoros\ServerRequest;
-
 class ForumRoutingTest extends TestCase
 {
     private QueryParamRouter $router;
-    
     protected function setUp(): void
     {
         $this->router = (new ForumRouterFactory())->create();
     }
-    
     public function testBoardDisplay(): void
     {
         $request = new ServerRequest([], [], '/', 'GET');
         $request = $request->withQueryParams(['board' => '1']);
-        
         $result = $this->router->match($request);
-        
         $this->assertTrue($result->isSuccess());
         $this->assertSame('board', $result->getMatchedRouteName());
         $this->assertSame(['board' => '1'], $result->getMatchedParams());
     }
-    
     public function testTopicDisplayIsMoreSpecific(): void
     {
         $request = new ServerRequest([], [], '/', 'GET');
@@ -630,13 +574,12 @@ class ForumRoutingTest extends TestCase
             'board' => '1',
             'topic' => '100'
         ]);
-        
         $result = $this->router->match($request);
-        
         $this->assertTrue($result->isSuccess());
         $this->assertSame('topic', $result->getMatchedRouteName());
     }
 }
+
 ```
 
 ## See Also

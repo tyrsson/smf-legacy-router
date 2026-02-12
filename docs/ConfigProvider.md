@@ -6,13 +6,13 @@
 
 ```php
 namespace Webware\Router;
-
 final class ConfigProvider
 {
     public function __invoke(): array;
     public function getDependencies(): array;
     public function getRouterConfig(): array;
 }
+
 ```
 
 ## Usage
@@ -25,19 +25,16 @@ The recommended way to use the ConfigProvider is with `laminas-config-aggregator
 // config/config.php
 use Laminas\ConfigAggregator\ConfigAggregator;
 use Webware\Router\ConfigProvider;
-
 $aggregator = new ConfigAggregator([
     // Other config providers
     Mezzio\Router\ConfigProvider::class,
-    
     // Query Parameter Router
     ConfigProvider::class,
-    
     // Application config
     new ArrayProvider($config),
 ], $cacheConfig['config_cache_path'] ?? null);
-
 return $aggregator->getMergedConfig();
+
 ```
 
 ### Manual Configuration
@@ -47,10 +44,9 @@ You can also use the ConfigProvider methods directly:
 ```php
 // config/autoload/dependencies.global.php
 use Webware\Router\ConfigProvider;
-
 $provider = new ConfigProvider();
-
 return $provider->getDependencies();
+
 ```
 
 ## Configuration Structure
@@ -70,6 +66,7 @@ The ConfigProvider returns the following structure when invoked:
         'detect_duplicates' => true,
     ],
 ]
+
 ```
 
 ## Methods
@@ -81,9 +78,9 @@ Returns the complete configuration array.
 ```php
 $provider = new ConfigProvider();
 $config = $provider();
-
 // $config['dependencies']['factories'][...]
 // $config['Webware\Router\QueryParamRouter'][...]
+
 ```
 
 ### `getDependencies(): array`
@@ -93,11 +90,11 @@ Returns only the dependencies configuration.
 ```php
 $provider = new ConfigProvider();
 $dependencies = $provider->getDependencies();
-
 // [
 //     'factories' => [...],
 //     'aliases' => [...],
 // ]
+
 ```
 
 ### `getRouterConfig(): array`
@@ -107,8 +104,8 @@ Returns the default router configuration.
 ```php
 $provider = new ConfigProvider();
 $routerConfig = $provider->getRouterConfig();
-
 // ['detect_duplicates' => true]
+
 ```
 
 ## Service Registration
@@ -123,9 +120,9 @@ Creates `QueryParamRouter` instances with optional duplicate detection.
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 // Retrieve from container
 $router = $container->get(QueryParamRouter::class);
+
 ```
 
 #### QueryParamDuplicateRouteDetectorFactory
@@ -134,9 +131,9 @@ Creates `QueryParamDuplicateRouteDetector` instances.
 
 ```php
 use Webware\Router\QueryParamDuplicateRouteDetector;
-
 // Retrieve from container
 $detector = $container->get(QueryParamDuplicateRouteDetector::class);
+
 ```
 
 ### Aliases
@@ -147,7 +144,6 @@ By default, no aliases are registered. You can register an alias to make `QueryP
 // config/autoload/dependencies.global.php
 use Mezzio\Router\RouterInterface;
 use Webware\Router\QueryParamRouter;
-
 return [
     'dependencies' => [
         'aliases' => [
@@ -155,6 +151,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ## Configuration Options
@@ -165,30 +162,27 @@ Configuration is stored under the `QueryParamRouter::class` key:
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Enable/disable duplicate detection
     ],
 ];
+
 ```
 
 ### Duplicate Detection
 
 **Default**: `true`
-
 Enable or disable duplicate route detection:
 
 ```php
 // config/autoload/router.global.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Enabled (recommended for development)
     ],
 ];
-
 // Or disable in production (optional)
 // config/autoload/router.local.php
 return [
@@ -196,6 +190,7 @@ return [
         'detect_duplicates' => false,
     ],
 ];
+
 ```
 
 ## Complete Integration Example
@@ -206,6 +201,7 @@ return [
 composer require webware/smf-legacy-router
 composer require laminas/laminas-config-aggregator
 composer require laminas/laminas-servicemanager
+
 ```
 
 ### 2. Configure Config Aggregator
@@ -215,19 +211,16 @@ composer require laminas/laminas-servicemanager
 use Laminas\ConfigAggregator\ConfigAggregator;
 use Laminas\ConfigAggregator\PhpFileProvider;
 use Webware\Router\ConfigProvider as QueryRouterConfigProvider;
-
 $aggregator = new ConfigAggregator([
     // Mezzio/Laminas providers
     \Laminas\Diactoros\ConfigProvider::class,
-    
     // Query Parameter Router
     QueryRouterConfigProvider::class,
-    
     // Load application config
     new PhpFileProvider(realpath(__DIR__) . '/autoload/{{,*.}global,{,*.}local}.php'),
 ], $cacheConfig['config_cache_path'] ?? null);
-
 return $aggregator->getMergedConfig();
+
 ```
 
 ### 3. Create Service Manager
@@ -235,18 +228,18 @@ return $aggregator->getMergedConfig();
 ```php
 // public/index.php
 use Laminas\ServiceManager\ServiceManager;
-
 $config = require __DIR__ . '/../config/config.php';
 $container = new ServiceManager($config['dependencies']);
 $container->setService('config', $config);
+
 ```
 
 ### 4. Use the Router
 
 ```php
 use Webware\Router\QueryParamRouter;
-
 $router = $container->get(QueryParamRouter::class);
+
 ```
 
 ## Environment-Specific Configuration
@@ -256,12 +249,12 @@ $router = $container->get(QueryParamRouter::class);
 ```php
 // config/autoload/development.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Enable for early error detection
     ],
 ];
+
 ```
 
 ### Production
@@ -269,12 +262,12 @@ return [
 ```php
 // config/autoload/production.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => false,  // Optional: disable for minimal perf gain
     ],
 ];
+
 ```
 
 ### Testing
@@ -282,12 +275,12 @@ return [
 ```php
 // config/autoload/testing.local.php
 use Webware\Router\QueryParamRouter;
-
 return [
     QueryParamRouter::class => [
         'detect_duplicates' => true,  // Enable to catch config issues
     ],
 ];
+
 ```
 
 ## Using with Mezzio
@@ -299,7 +292,6 @@ return [
 use Laminas\ServiceManager\ServiceManager;
 use Webware\Router\ConfigProvider;
 use Webware\Router\QueryParamRouter;
-
 class AppFactory
 {
     public static function create(): Application
@@ -307,13 +299,12 @@ class AppFactory
         $config = require __DIR__ . '/../config/config.php';
         $container = new ServiceManager($config['dependencies']);
         $container->setService('config', $config);
-        
         // Get router from container
         $router = $container->get(QueryParamRouter::class);
-        
         return new Application($router, $container);
     }
 }
+
 ```
 
 ### Route Configuration
@@ -321,16 +312,15 @@ class AppFactory
 ```php
 // config/routes.php
 use Webware\Router\QueryParamRoute;
-
 return function ($app, $factory, $container) {
     // Add routes to the application
     $app->route('/forum', QueryParamRoute::class, ['action'])
         ->setName('forum');
-    
     $app->route('/api', QueryParamRoute::class, ['resource', 'action'])
         ->setMethods(['POST', 'PUT'])
         ->setName('api');
 };
+
 ```
 
 ## Custom Configuration
@@ -339,22 +329,19 @@ return function ($app, $factory, $container) {
 
 ```php
 namespace App;
-
 use Webware\Router\ConfigProvider as BaseConfigProvider;
-
 class CustomRouterConfigProvider extends BaseConfigProvider
 {
     public function __invoke(): array
     {
         $config = parent::__invoke();
-        
         // Add custom configuration
-        $config['dependencies']['factories']['App\\CustomRouterService'] = 
+        $config['dependencies']['factories']['App\\CustomRouterService'] =
             'App\\CustomRouterServiceFactory';
-        
         return $config;
     }
 }
+
 ```
 
 ### Adding Custom Services
@@ -362,7 +349,6 @@ class CustomRouterConfigProvider extends BaseConfigProvider
 ```php
 // config/autoload/dependencies.global.php
 use Webware\Router\QueryParamRouter;
-
 return [
     'dependencies' => [
         'factories' => [
@@ -374,6 +360,7 @@ return [
         ],
     ],
 ];
+
 ```
 
 ## Troubleshooting
@@ -381,7 +368,6 @@ return [
 ### Router Not Found in Container
 
 **Problem**: `ServiceNotFoundException` when requesting `QueryParamRouter::class`
-
 **Solution**: Ensure ConfigProvider is registered in config aggregator:
 
 ```php
@@ -390,28 +376,29 @@ $aggregator = new ConfigAggregator([
     \Webware\Router\ConfigProvider::class,  // Must be present
     // ...
 ]);
+
 ```
 
 ### Configuration Not Applied
 
 **Problem**: Router still uses default configuration
-
 **Solution**: Ensure config is passed to ServiceManager and configuration file is loaded:
 
 ```php
 // Verify config is loaded
 $container = new ServiceManager($config['dependencies']);
 $container->setService('config', $config);  // Important!
+
 ```
 
 ### Factory Not Found
 
 **Problem**: `ServiceNotFoundException` for factory class
-
 **Solution**: Ensure composer autoload is up to date:
 
 ```bash
 composer dump-autoload
+
 ```
 
 ## See Also

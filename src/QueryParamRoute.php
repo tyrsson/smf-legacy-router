@@ -2,13 +2,22 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the Webware Smf Legacy Router package.
+ *
+ * Copyright (c) 2026 Joey (aka Tyrsson) Smith <jsmith@webinertia.net>
+ * and contributors.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Webware\Router;
 
 use Mezzio\Router\Route;
 use Psr\Http\Server\MiddlewareInterface;
 
 use function array_keys;
-use function count;
 use function implode;
 
 /**
@@ -19,6 +28,7 @@ use function implode;
  * (case-sensitive). Additional query parameters are allowed.
  *
  * @final
+ *
  * @phpstan-ignore-next-line
  */
 class QueryParamRoute extends Route
@@ -31,7 +41,7 @@ class QueryParamRoute extends Route
         MiddlewareInterface $middleware,
         private array $queryParamKeys = [],
         ?array $methods = self::HTTP_METHOD_ANY,
-        ?string $name = null
+        ?string $name = null,
     ) {
         // Generate name before calling parent constructor if name not provided
         if ($name === null || $name === '') {
@@ -41,7 +51,7 @@ class QueryParamRoute extends Route
         parent::__construct($path, $middleware, $methods, $name);
 
         // Store query param keys in options for router access
-        $options = $this->getOptions();
+        $options                 = $this->getOptions();
         $options['query_params'] = $queryParamKeys;
         $this->setOptions($options);
     }

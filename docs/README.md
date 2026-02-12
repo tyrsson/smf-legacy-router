@@ -8,6 +8,7 @@ Welcome to the comprehensive documentation for Query Parameter Router, a query-p
 
 ```bash
 composer require webware/smf-legacy-router
+
 ```
 
 ### Basic Usage
@@ -15,20 +16,17 @@ composer require webware/smf-legacy-router
 ```php
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
-
 $router = new QueryParamRouter();
-
 // Create a route that requires 'action' query parameter
 $route = new QueryParamRoute(
     '/api',           // path
     $middleware,      // your middleware/handler
     ['action']        // required query param keys
 );
-
 $router->addRoute($route);
-
 // Match incoming requests
 $result = $router->match($request);
+
 ```
 
 ## Core Concepts
@@ -66,13 +64,14 @@ The Query Parameter Router extends standard Mezzio routing by adding support for
 
 ## Architecture Overview
 
-```
+```text
 Request → QueryParamRouter → Match by:
                               1. Path
                               2. Query Param Keys
                               3. HTTP Method
                               ↓
                            RouteResult → Middleware → Response
+
 ```
 
 ### Matching Logic
@@ -88,11 +87,9 @@ Request → QueryParamRouter → Match by:
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
 use Webware\Router\QueryParamDuplicateRouteDetector;
-
 // Create router with duplicate detection
 $detector = new QueryParamDuplicateRouteDetector();
 $router = new QueryParamRouter($detector);
-
 // Add routes
 $router->addRoute(new QueryParamRoute(
     '/forum',
@@ -101,7 +98,6 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'forum.board'
 ));
-
 $router->addRoute(new QueryParamRoute(
     '/forum',
     $displayTopicMiddleware,
@@ -109,13 +105,12 @@ $router->addRoute(new QueryParamRoute(
     ['GET'],
     'forum.topic'
 ));
-
 // Match request: /forum?board=1&topic=100
 $result = $router->match($request);
 // Matches second route (more specific)
-
 $params = $result->getMatchedParams();
 // ['board' => '1', 'topic' => '100']
+
 ```
 
 ## Integration with Mezzio/Laminas
@@ -126,13 +121,12 @@ $params = $result->getMatchedParams();
 // config/config.php
 use Laminas\ConfigAggregator\ConfigAggregator;
 use Webware\Router\ConfigProvider;
-
 $aggregator = new ConfigAggregator([
     ConfigProvider::class,
     // ... other providers
 ]);
-
 return $aggregator->getMergedConfig();
+
 ```
 
 ### Using in Middleware Pipeline
@@ -141,9 +135,7 @@ return $aggregator->getMergedConfig();
 use Laminas\Stratigility\MiddlewarePipe;
 use Mezzio\Router\RouteResult;
 use Webware\Router\QueryParamRouter;
-
 $pipe = new MiddlewarePipe();
-
 // Routing middleware
 $pipe->pipe(function ($request, $handler) use ($container) {
     $router = $container->get(QueryParamRouter::class);
@@ -152,7 +144,6 @@ $pipe->pipe(function ($request, $handler) use ($container) {
         $request->withAttribute(RouteResult::class, $result)
     );
 });
-
 // Dispatch middleware
 $pipe->pipe(function ($request, $handler) {
     $result = $request->getAttribute(RouteResult::class);
@@ -161,6 +152,7 @@ $pipe->pipe(function ($request, $handler) {
     }
     return $handler->handle($request);
 });
+
 ```
 
 ## Key Behaviors
@@ -180,14 +172,15 @@ When multiple routes match, the route with the **most required query parameters*
 // Given these routes:
 Route 1: /api + ['action']           // 1 param
 Route 2: /api + ['action', 'type']   // 2 params
-
 // Request: /api?action=create&type=user
 // Matches: Route 2 (more specific)
+
 ```
 
 ### Duplicate Detection
 
 Routes are duplicates if they share:
+
 - Same route name, OR
 - Same path + query param keys + HTTP method
 
@@ -195,10 +188,10 @@ Routes are duplicates if they share:
 // These are duplicates (will throw exception):
 Route 1: /api + ['action'] + GET
 Route 2: /api + ['action'] + GET
-
 // These are NOT duplicates:
 Route 1: /api + ['action'] + GET
 Route 2: /api + ['action'] + POST
+
 ```
 
 ## Common Patterns
@@ -212,6 +205,7 @@ $route = new QueryParamRoute(
     $handler,
     ['board', 'action']
 );
+
 ```
 
 ### Action-Based Routing
@@ -220,6 +214,7 @@ $route = new QueryParamRoute(
 // Different actions on same path
 $router->addRoute(new QueryParamRoute('/api', $createHandler, ['action'], ['POST']));
 $router->addRoute(new QueryParamRoute('/api', $listHandler, ['action'], ['GET']));
+
 ```
 
 ### Multi-Tenant Applications
@@ -231,6 +226,7 @@ $route = new QueryParamRoute(
     $tenantMiddleware,
     ['tenant_id']
 );
+
 ```
 
 ## Next Steps
@@ -244,5 +240,4 @@ $route = new QueryParamRoute(
 
 - **GitHub Issues**: [tyrsson/smf-legacy-router/issues](https://github.com/tyrsson/smf-legacy-router/issues)
 - **Discussions**: [tyrsson/smf-legacy-router/discussions](https://github.com/tyrsson/smf-legacy-router/discussions)
-
 Contributions welcome! Please ensure all tests pass and follow the existing code style.

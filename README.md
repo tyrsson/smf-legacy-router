@@ -112,6 +112,7 @@ $router->addRoute(new QueryParamRoute('/api', $handler2, ['action']));
 ```
 
 **Duplicate Detection Rules:**
+
 - Same route name → Duplicate
 - Same path + query param keys + HTTP method → Duplicate
 - Query param keys are order-independent: `['action', 'type']` == `['type', 'action']`
@@ -326,7 +327,7 @@ $result->isFailure();  // true
 ## Comparison with Standard Mezzio Routing
 
 | Feature | Standard Mezzio Router | Query Param Router |
-|---------|----------------------|-------------------|
+| --------- | ---------------------- | ------------------- |
 | Match by Path | ✅ | ✅ |
 | Match by HTTP Method | ✅ | ✅ |
 | Match by Query Params | ❌ | ✅ |
@@ -364,7 +365,7 @@ vendor/bin/php-cs-fixer fix --dry-run --diff
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.0+
 - [mezzio/mezzio-router](https://github.com/mezzio/mezzio-router) ^3.13
 - [laminas/laminas-stratigility](https://github.com/laminas/laminas-stratigility) ^3.10 (for integration)
 
