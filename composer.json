@@ -1,6 +1,6 @@
 {
-    "name": "tyrsson/repo-template",
-    "description": "A template repository for new PHP projects",
+    "name": "webware/smf-legacy-router",
+    "description": "RouterInterface for routing legacy SMF urls to middleware/request handlers.",
     "license": "BSD-3-Clause",
     "keywords": [
         "template",
@@ -11,7 +11,7 @@
         {
             "name": "Joey (aka Tyrsson) Smith",
             "email": "jsmith@webinertia.net",
-            "homepage": "https://github.com/tyrsson/repo-template/discussions",
+            "homepage": "https://github.com/tyrsson/smf-legacy-router/discussions",
             "role": "Developer"
         }
     ],
@@ -27,9 +27,11 @@
         }
     },
     "require": {
-        "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
+        "mezzio/mezzio-router": "3.13.0"
     },
     "require-dev": {
+        "laminas/laminas-diactoros": "3.2.0",
+        "laminas/laminas-stratigility": "3.10.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpunit/phpunit": "^11.5.42",
@@ -38,14 +40,14 @@
     },
     "autoload": {
         "psr-4": {
-            "Tyrsson\\RepoTemplate\\": "src/"
+            "Webware\\Router\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "TyrssonIntegrationTest\\RepoTemplate\\": "test/integration/",
-            "TyrssonTestAsset\\RepoTemplate\\": "test/asset/",
-            "TyrssonTest\\RepoTemplate\\": "test/unit/"
+            "WebwareIntegrationTest\\Router\\": "test/integration/",
+            "WebwareTestAsset\\Router\\": "test/asset/",
+            "WebwareTest\\Router\\": "test/unit/"
         }
     },
     "scripts": {
