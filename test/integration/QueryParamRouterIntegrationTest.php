@@ -18,6 +18,8 @@ use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Stratigility\MiddlewarePipe;
 use Mezzio\Router\RouteResult;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -27,6 +29,9 @@ use Webware\Router\QueryParamDuplicateRouteDetector;
 use Webware\Router\QueryParamRoute;
 use Webware\Router\QueryParamRouter;
 
+#[CoversClass(QueryParamRouter::class)]
+#[UsesClass(QueryParamRoute::class)]
+#[UsesClass(QueryParamDuplicateRouteDetector::class)]
 class QueryParamRouterIntegrationTest extends TestCase
 {
     private QueryParamRouter $router;

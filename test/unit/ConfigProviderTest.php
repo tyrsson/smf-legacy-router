@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace WebwareTest\Router;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Webware\Router\ConfigProvider;
@@ -22,6 +24,11 @@ use Webware\Router\QueryParamDuplicateRouteDetectorFactory;
 use Webware\Router\QueryParamRouter;
 use Webware\Router\QueryParamRouterFactory;
 
+#[CoversClass(ConfigProvider::class)]
+#[CoversClass(QueryParamRouterFactory::class)]
+#[CoversClass(QueryParamDuplicateRouteDetectorFactory::class)]
+#[UsesClass(QueryParamRouter::class)]
+#[UsesClass(QueryParamDuplicateRouteDetector::class)]
 class ConfigProviderTest extends TestCase
 {
     private ConfigProvider $provider;
