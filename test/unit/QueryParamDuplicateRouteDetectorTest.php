@@ -15,11 +15,16 @@ declare(strict_types=1);
 namespace WebwareTest\Router;
 
 use Mezzio\Router\Exception\DuplicateRouteException;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Server\MiddlewareInterface;
 use Webware\Router\QueryParamDuplicateRouteDetector;
 use Webware\Router\QueryParamRoute;
 
+#[CoversClass(QueryParamDuplicateRouteDetector::class)]
+#[UsesClass(QueryParamRoute::class)]
 class QueryParamDuplicateRouteDetectorTest extends TestCase
 {
     private QueryParamDuplicateRouteDetector $detector;
@@ -32,6 +37,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->middleware = $this->createMock(MiddlewareInterface::class);
     }
 
+    #[DoesNotPerformAssertions()]
     public function testAllowsSamePathWithDifferentQueryParams(): void
     {
         $route1 = new QueryParamRoute('/api', $this->middleware, ['action']);
@@ -39,8 +45,6 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
 
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
-
-        // $this->assertTrue(true); // If we get here, no exception was thrown
     }
 
     public function testThrowsOnDuplicatePathAndQueryParams(): void
@@ -66,6 +70,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route2);
     }
 
+    #[DoesNotPerformAssertions()]
     public function testAllowsSamePathQueryParamsWithDifferentMethods(): void
     {
         $route1 = new QueryParamRoute('/api', $this->middleware, ['action'], ['GET']);
@@ -73,8 +78,6 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
 
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
-
-        // $this->assertTrue(true);
     }
 
     public function testThrowsWhenAnyMethodRouteExistsAndSpecificMethodAdded(): void
@@ -110,6 +113,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route2);
     }
 
+    #[DoesNotPerformAssertions()]
     public function testQueryParamKeysAreCaseSensitive(): void
     {
         $route1 = new QueryParamRoute('/api', $this->middleware, ['Action']);
@@ -117,8 +121,6 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
 
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw (different case)
-
-        // $this->assertTrue(true);
     }
 
     public function testThrowsOnDuplicateRouteName(): void
@@ -133,6 +135,7 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->detector->detectDuplicate($route2);
     }
 
+    #[DoesNotPerformAssertions()]
     public function testAllowsSamePathDifferentQueryParamCount(): void
     {
         $route1 = new QueryParamRoute('/api', $this->middleware, ['action']);
@@ -140,10 +143,9 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
 
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
-
-        // $this->assertTrue(true);
     }
 
+    #[DoesNotPerformAssertions()]
     public function testAllowsEmptyQueryParamsOnDifferentPaths(): void
     {
         $route1 = new QueryParamRoute('/api', $this->middleware, []);
@@ -151,8 +153,6 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
 
         $this->detector->detectDuplicate($route1);
         $this->detector->detectDuplicate($route2); // Should not throw
-
-        // $this->assertTrue(true);
     }
 
     public function testThrowsOnDuplicateEmptyQueryParamsSamePath(): void
