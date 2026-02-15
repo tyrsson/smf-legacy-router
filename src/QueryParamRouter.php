@@ -21,8 +21,10 @@ use Mezzio\Router\RouterInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use function array_key_exists;
+use function array_is_list;
 use function count;
 use function http_build_query;
+use function is_int;
 use function sprintf;
 use function str_replace;
 
@@ -100,8 +102,19 @@ final class QueryParamRouter implements RouterInterface
                 continue;
             }
 
-            // Calculate match score (more specific query params = higher score)
-            $score = count($this->getRouteQueryParamKeys($route));
+            // Calculate match score
+            // Higher score = more specific match
+            // - Base score: number of query param keys
+            // - Bonus: +100 for each parameter with a specific value constraint
+            $constraints = $this->getRouteQueryParamConstraints($route);
+            $score       = count($constraints);
+            
+            // Add bonus for value-specific constraints
+            foreach ($constraints as $value) {
+                if ($value !== null) {
+                    $score += 100; // Large bonus for value-specific matching
+                }
+            }
 
             if ($score > $bestMatchScore) {
                 $bestMatch      = $route;
@@ -159,17 +172,29 @@ final class QueryParamRouter implements RouterInterface
         }
 
         // For standard routes, check if query_params option exists
-        $options      = $route->getOptions();
-        $requiredKeys = $options['query_params'] ?? [];
+        $options     = $route->getOptions();
+        $constraints = $options['query_params'] ?? [];
 
-        if (! is_array($requiredKeys) || empty($requiredKeys)) {
+        if (! is_array($constraints) || empty($constraints)) {
             return true; // No query params required
         }
 
-        // Check all required keys are present (case-sensitive)
-        foreach ($requiredKeys as $key) {
-            if (! is_string($key) || ! array_key_exists($key, $queryParams)) {
-                return false;
+        // Handle both old format (list) and new format (constraints)
+        foreach ($constraints as $key => $value) {
+            // If numeric key, it's old format (list of keys)
+            if (is_int($key)) {
+                if (! is_string($value) || ! array_key_exists($value, $queryParams)) {
+                    return false;
+                }
+            } else {
+                // New format (key => constraint)
+                if (! array_key_exists($key, $queryParams)) {
+                    return false;
+                }
+                // Check value constraint if not null
+                if ($value !== null && $queryParams[$key] !== $value) {
+                    return false;
+                }
             }
         }
 
@@ -194,8 +219,42 @@ final class QueryParamRouter implements RouterInterface
             return [];
         }
 
-        // Ensure it's a list of strings
-        return array_values(array_filter($queryParams, 'is_string'));
+        // Handle both formats: list or associative array
+        return array_keys($queryParams);
+    }
+
+    /**
+     * Get query param constraints from route.
+     *
+     * @return array<string, mixed> Map of param name => constraint value
+     */
+    private function getRouteQueryParamConstraints(Route $route): array
+    {
+        if ($route instanceof QueryParamRoute) {
+            return $route->getQueryParamConstraints();
+        }
+
+        $options     = $route->getOptions();
+        $queryParams = $options['query_params'] ?? [];
+
+        if (! is_array($queryParams)) {
+            return [];
+        }
+
+        // If it's an indexed array (old format), convert to constraints
+        if (array_is_list($queryParams)) {
+            $constraints = [];
+            foreach ($queryParams as $key) {
+                if (is_string($key)) {
+                    $constraints[$key] = null;
+                }
+            }
+            return $constraints;
+        }
+
+        // Already in constraint format
+        // @phpstan-ignore-next-line return.type - Route options contain mixed types
+        return $queryParams;
     }
 
     /**

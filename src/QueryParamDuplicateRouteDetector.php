@@ -139,9 +139,21 @@ final class QueryParamDuplicateRouteDetector
         $name           = $duplicate->getName();
 
         $queryParams = $this->getQueryParamsFromRoute($duplicate);
-        $queryInfo   = empty($queryParams)
-            ? ''
-            : sprintf(' with query params [%s]', implode(',', $queryParams));
+        $queryInfo   = '';
+        if (! empty($queryParams)) {
+            $parts = [];
+            foreach ($queryParams as $key => $value) {
+                if (! is_string($key)) {
+                    continue;
+                }
+                if ($value === null) {
+                    $parts[] = $key;
+                } elseif (is_scalar($value)) {
+                    $parts[] = $key . '=' . (string) $value;
+                }
+            }
+            $queryInfo = sprintf(' with query params [%s]', implode(',', $parts));
+        }
 
         throw new DuplicateRouteException(sprintf('Duplicate route detected; path "%s"%s answering to methods [%s]%s', $duplicate->getPath(), $queryInfo, implode(',', $allowedMethods), $name ? sprintf(', with name "%s"', $name) : ''));
     }
@@ -150,7 +162,10 @@ final class QueryParamDuplicateRouteDetector
      * Get a normalized key for query parameters (sorted, case-sensitive).
      *
      * This ensures that routes with the same query params in different orders
-     * are detected as duplicates.
+     * are detected as duplicates, but routes with different value constraints
+     * are NOT detected as duplicates.
+     *
+     * Format: "key1=value1,key2" (where key2 has no value constraint)
      */
     private function getQueryKey(Route $route): string
     {
@@ -160,17 +175,31 @@ final class QueryParamDuplicateRouteDetector
             return ''; // Empty key for routes without query params
         }
 
-        // Sort for order-independence
-        $sorted = $queryParams;
-        sort($sorted, SORT_STRING);
+        // Build key parts including values when constraints are present
+        $parts = [];
+        foreach ($queryParams as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+            if ($value === null) {
+                // No value constraint, just use key
+                $parts[] = $key;
+            } elseif (is_scalar($value)) {
+                // Has value constraint, include it in the key
+                $parts[] = $key . '=' . (string) $value;
+            }
+        }
 
-        return implode(',', $sorted);
+        // Sort for order-independence
+        sort($parts, SORT_STRING);
+
+        return implode(',', $parts);
     }
 
     /**
-     * Extract query parameter keys from route options.
+     * Extract query parameter constraints from route options.
      *
-     * @return list<string>
+     * @return array<string, mixed> Map of param name => constraint value
      */
     private function getQueryParamsFromRoute(Route $route): array
     {
@@ -181,7 +210,7 @@ final class QueryParamDuplicateRouteDetector
             return [];
         }
 
-        // Ensure it's a list of strings
-        return array_values(array_filter($queryParams, 'is_string'));
+        // @phpstan-ignore-next-line return.type - Route options contain mixed types
+        return $queryParams;
     }
 }

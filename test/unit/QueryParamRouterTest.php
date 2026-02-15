@@ -277,4 +277,124 @@ class QueryParamRouterTest extends TestCase
         $this->assertTrue($this->router->match($request1)->isSuccess());
         $this->assertTrue($this->router->match($request2)->isFailure());
     }
+
+    // Value constraint routing tests
+
+    public function testMatchesRouteWithSpecificValueConstraint(): void
+    {
+        $route = new QueryParamRoute('/', $this->middleware, ['action' => 'profile', 'u' => null]);
+        $this->router->addRoute($route);
+
+        // Should match when action=profile
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'u' => '1']);
+
+        $result = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($route, $result->getMatchedRoute());
+    }
+
+    public function testDoesNotMatchRouteWithWrongValue(): void
+    {
+        $route = new QueryParamRoute('/', $this->middleware, ['action' => 'profile', 'u' => null]);
+        $this->router->addRoute($route);
+
+        // Should NOT match when action=edit
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit', 'u' => '1']);
+
+        $result = $this->router->match($request);
+        $this->assertTrue($result->isFailure());
+    }
+
+    public function testSelectsMostSpecificRouteByValue(): void
+    {
+        // Route with specific value constraint
+        $profileRoute = new QueryParamRoute('/', $this->middleware, ['action' => 'profile', 'u' => null], null, 'profile');
+        
+        // Route with wildcard (any value)
+        $wildcardRoute = new QueryParamRoute('/', $this->middleware, ['action' => null, 'u' => null], null, 'wildcard');
+
+        $this->router->addRoute($wildcardRoute);
+        $this->router->addRoute($profileRoute);
+
+        // Should match the more specific route (with value constraint)
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'u' => '1']);
+
+        $result = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame('profile', $result->getMatchedRouteName());
+    }
+
+    public function testSelectsWildcardRouteWhenValueDoesNotMatch(): void
+    {
+        // Route with specific value constraint
+        $profileRoute = new QueryParamRoute('/', $this->middleware, ['action' => 'profile', 'u' => null], null, 'profile');
+        
+        // Route with wildcard (any value)
+        $wildcardRoute = new QueryParamRoute('/', $this->middleware, ['action' => null, 'u' => null], null, 'wildcard');
+
+        $this->router->addRoute($wildcardRoute);
+        $this->router->addRoute($profileRoute);
+
+        // Should match the wildcard route when action=edit
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit', 'u' => '1']);
+
+        $result = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame('wildcard', $result->getMatchedRouteName());
+    }
+
+    public function testMultipleRoutesWithDifferentValueConstraints(): void
+    {
+        $profileRoute = new QueryParamRoute('/', $this->middleware, ['action' => 'profile'], null, 'profile');
+        $editRoute    = new QueryParamRoute('/', $this->middleware, ['action' => 'edit'], null, 'edit');
+        $deleteRoute  = new QueryParamRoute('/', $this->middleware, ['action' => 'delete'], null, 'delete');
+
+        $this->router->addRoute($profileRoute);
+        $this->router->addRoute($editRoute);
+        $this->router->addRoute($deleteRoute);
+
+        // Test profile
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile']);
+        $this->assertSame('profile', $this->router->match($request)->getMatchedRouteName());
+
+        // Test edit
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit']);
+        $this->assertSame('edit', $this->router->match($request)->getMatchedRouteName());
+
+        // Test delete
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'delete']);
+        $this->assertSame('delete', $this->router->match($request)->getMatchedRouteName());
+    }
+
+    public function testValueConstraintsWithMultipleParameters(): void
+    {
+        $route = new QueryParamRoute(
+            '/',
+            $this->middleware,
+            ['action' => 'profile', 'section' => 'settings', 'u' => null]
+        );
+        $this->router->addRoute($route);
+
+        // Should match when both constrained values match
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'section' => 'settings', 'u' => '1']);
+        $this->assertTrue($this->router->match($request)->isSuccess());
+
+        // Should NOT match when action is wrong
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit', 'section' => 'settings', 'u' => '1']);
+        $this->assertTrue($this->router->match($request)->isFailure());
+
+        // Should NOT match when section is wrong
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'section' => 'other', 'u' => '1']);
+        $this->assertTrue($this->router->match($request)->isFailure());
+    }
 }
