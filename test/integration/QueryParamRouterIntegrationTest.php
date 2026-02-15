@@ -330,4 +330,120 @@ class QueryParamRouterIntegrationTest extends TestCase
             }
         };
     }
+
+    // Value constraint integration tests
+
+    public function testValueConstraintRouting(): void
+    {
+        $profileHandler = $this->createHandler('profile-page');
+        $editHandler    = $this->createHandler('edit-page');
+        $wildcardHandler = $this->createHandler('wildcard-page');
+
+        // Routes with specific value constraints
+        $profileRoute = new QueryParamRoute('/', $profileHandler, ['action' => 'profile', 'u' => null]);
+        $editRoute    = new QueryParamRoute('/', $editHandler, ['action' => 'edit', 'u' => null]);
+        
+        // Wildcard route as fallback
+        $wildcardRoute = new QueryParamRoute('/', $wildcardHandler, ['action' => null, 'u' => null]);
+
+        $this->router->addRoute($wildcardRoute);
+        $this->router->addRoute($profileRoute);
+        $this->router->addRoute($editRoute);
+
+        // Test profile route
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'u' => '1']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($profileRoute, $result->getMatchedRoute());
+
+        // Test edit route
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit', 'u' => '1']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($editRoute, $result->getMatchedRoute());
+
+        // Test wildcard fallback
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'other', 'u' => '1']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($wildcardRoute, $result->getMatchedRoute());
+    }
+
+    public function testRealWorldSMFStyleRouting(): void
+    {
+        // SMF-style routes with action and user parameters
+        $profileHandler = $this->createHandler('user-profile');
+        $pmHandler      = $this->createHandler('private-messages');
+        $adminHandler   = $this->createHandler('admin-panel');
+
+        $profileRoute = new QueryParamRoute('/', $profileHandler, ['action' => 'profile', 'u' => null]);
+        $pmRoute      = new QueryParamRoute('/', $pmHandler, ['action' => 'pm']);
+        $adminRoute   = new QueryParamRoute('/', $adminHandler, ['action' => 'admin', 'area' => null]);
+
+        $this->router->addRoute($profileRoute);
+        $this->router->addRoute($pmRoute);
+        $this->router->addRoute($adminRoute);
+
+        // Test profile with user ID
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'u' => '123']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($profileRoute, $result->getMatchedRoute());
+        $params = $result->getMatchedParams();
+        $this->assertSame('profile', $params['action']);
+        $this->assertSame('123', $params['u']);
+
+        // Test PM without extra params
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'pm']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($pmRoute, $result->getMatchedRoute());
+
+        // Test admin with area
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'admin', 'area' => 'settings']);
+        $result  = $this->router->match($request);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($adminRoute, $result->getMatchedRoute());
+    }
+
+    public function testValueConstraintWithMiddlewarePipeline(): void
+    {
+        $profileHandler = $this->createHandler('profile-response');
+        $editHandler    = $this->createHandler('edit-response');
+
+        $profileRoute = new QueryParamRoute('/', $profileHandler, ['action' => 'profile', 'u' => null]);
+        $editRoute    = new QueryParamRoute('/', $editHandler, ['action' => 'edit', 'u' => null]);
+
+        $this->router->addRoute($profileRoute);
+        $this->router->addRoute($editRoute);
+
+        // Create middleware pipeline
+        $pipe = new MiddlewarePipe();
+        $pipe->pipe($this->createRoutingMiddleware());
+        $pipe->pipe($this->createDispatchMiddleware());
+
+        // Test profile action
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'profile', 'u' => '1']);
+        $response = $pipe->process($request, $this->createFinalHandler());
+        $this->assertSame('profile-response', (string) $response->getBody());
+
+        // Test edit action
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'edit', 'u' => '1']);
+        $response = $pipe->process($request, $this->createFinalHandler());
+        $this->assertSame('edit-response', (string) $response->getBody());
+
+        // Test non-matching action
+        $request = new ServerRequest([], [], '/', 'GET');
+        $request = $request->withQueryParams(['action' => 'delete', 'u' => '1']);
+        $response = $pipe->process($request, $this->createFinalHandler());
+        $this->assertSame('not-found', (string) $response->getBody());
+    }
 }

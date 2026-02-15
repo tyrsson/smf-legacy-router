@@ -177,4 +177,64 @@ class QueryParamDuplicateRouteDetectorTest extends TestCase
         $this->expectExceptionMessage('POST');
         $this->detector->detectDuplicate($route2);
     }
+
+    // Value constraint tests
+
+    public function testAllowsSamePathWithDifferentValueConstraints(): void
+    {
+        $route1 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'u' => null]);
+        $route2 = new QueryParamRoute('/api', $this->middleware, ['action' => 'edit', 'u' => null]);
+
+        $this->detector->detectDuplicate($route1);
+        $this->detector->detectDuplicate($route2); // Should not throw - different value constraints
+        
+        $this->assertTrue(true); // If we get here, no exception was thrown
+    }
+
+    public function testThrowsOnSamePathAndValueConstraints(): void
+    {
+        $route1 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'u' => null]);
+        $route2 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'u' => null]);
+
+        $this->detector->detectDuplicate($route1);
+
+        $this->expectException(DuplicateRouteException::class);
+        $this->detector->detectDuplicate($route2);
+    }
+
+    public function testAllowsWildcardAndSpecificValueForSameKey(): void
+    {
+        // Wildcard route (any value)
+        $route1 = new QueryParamRoute('/api', $this->middleware, ['action' => null, 'u' => null]);
+        
+        // Specific value route
+        $route2 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'u' => null]);
+
+        $this->detector->detectDuplicate($route1);
+        $this->detector->detectDuplicate($route2); // Should not throw - different constraints
+        
+        $this->assertTrue(true); // If we get here, no exception was thrown
+    }
+
+    public function testValueConstraintsAreOrderIndependent(): void
+    {
+        $route1 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'type' => 'user']);
+        $route2 = new QueryParamRoute('/api', $this->middleware, ['type' => 'user', 'action' => 'profile']);
+
+        $this->detector->detectDuplicate($route1);
+
+        $this->expectException(DuplicateRouteException::class);
+        $this->detector->detectDuplicate($route2); // Should throw - same constraints, different order
+    }
+
+    public function testMixedConstraintsNotConsideredDuplicate(): void
+    {
+        $route1 = new QueryParamRoute('/api', $this->middleware, ['action' => 'profile', 'type' => null]);
+        $route2 = new QueryParamRoute('/api', $this->middleware, ['action' => null, 'type' => 'user']);
+
+        $this->detector->detectDuplicate($route1);
+        $this->detector->detectDuplicate($route2); // Should not throw - different constraints
+        
+        $this->assertTrue(true); // If we get here, no exception was thrown
+    }
 }
